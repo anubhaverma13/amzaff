@@ -1,15 +1,8 @@
-import os
 from urllib.parse import urlparse, parse_qs
 import re
 import requests  # Import requests to handle URL redirection
 from telegram import Update
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    MessageHandler,
-    filters,
-    CallbackContext,
-)
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 
 AFFILIATE_TAG = 'subh0705-21'
 
@@ -22,7 +15,7 @@ def extract_asin(url):
     try:
         response = requests.get(url, allow_redirects=True)
         resolved_url = response.url
-    except requests.RequestException:
+    except requests.RequestException as e:
         # If there's an error resolving the URL, use the original
         resolved_url = url
 
@@ -48,9 +41,7 @@ def normalize_link(asin):
     return normalized_url
 
 async def start(update: Update, context: CallbackContext) -> None:
-    await update.message.reply_text(
-        'Send me the Amazon product URL, and I will generate the affiliate link!'
-    )
+    await update.message.reply_text('Send me the Amazon product URL, and I will generate the affiliate link!')
 
 async def generate_affiliate_link(update: Update, context: CallbackContext) -> None:
     product_url = update.message.text.strip()
@@ -63,40 +54,13 @@ async def generate_affiliate_link(update: Update, context: CallbackContext) -> N
         affiliate_link = normalize_link(asin)
         await update.message.reply_text(f"Here's your affiliate link: {affiliate_link}")
     else:
-        await update.message.reply_text(
-            'Unable to extract ASIN from the provided URL. Please provide a valid Amazon product URL.'
-        )
+        await update.message.reply_text('Unable to extract ASIN from the provided URL. Please provide a valid Amazon product URL.')
 
 def main():
-    import logging
-
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
-
-    TOKEN = os.environ.get('TELEGRAM_TOKEN')
-    PORT = int(os.environ.get('PORT', '8443'))
-    HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-
-    if not TOKEN:
-        logger.error("TELEGRAM_TOKEN is not set")
-        return
-
-    application = Application.builder().token(TOKEN).build()
+    application = Application.builder().token('7750214199:AAFdf8U6mr2T5awgFpeXRy_y31CerftwYoI').build()
     application.add_handler(CommandHandler('start', start))
-    application.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, generate_affiliate_link)
-    )
-
-    # Set webhook URL
-    webhook_url = f'https://{HOSTNAME}/{TOKEN}'
-    logger.info(f"Setting webhook to {webhook_url}")
-
-    application.run_webhook(
-        listen='0.0.0.0',
-        port=PORT,
-        url_path=TOKEN,
-        webhook_url=webhook_url,
-    )
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, generate_affiliate_link))
+    application.run_polling()
 
 if __name__ == '__main__':
     main()
